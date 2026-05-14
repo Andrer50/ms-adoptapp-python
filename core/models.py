@@ -3,11 +3,12 @@ from django.contrib.auth.models import AbstractUser
 
 class Usuario(AbstractUser):
     ROLES = (
-        ('USUARIO', 'Usuario Normal'),
+        ('ADMIN', 'Administrador'),
         ('ALBERGUE', 'Albergue'),
+        ('USER', 'Usuario Adoptante/Publicador'),
     )
     telefono_wsp = models.CharField(max_length=20, blank=True)
-    tipo_rol = models.CharField(max_length=10, choices=ROLES, default='USUARIO')
+    tipo_rol = models.CharField(max_length=10, choices=ROLES, default='USER')
     # PostgreSQL JSONB nativo
     datos_adicionales = models.JSONField(default=dict, blank=True)
 

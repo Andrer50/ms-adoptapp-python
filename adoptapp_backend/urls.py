@@ -29,6 +29,6 @@ urlpatterns = [
     # Endpoints de Autenticación
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    # Aquí incluirás las rutas de tu app core más adelante
-    # path('api/', include('core.urls')), 
+    # Endpoints de la App Core
+    path('api/', include('core.urls')), 
 ]
