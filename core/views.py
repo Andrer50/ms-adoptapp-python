@@ -1,4 +1,5 @@
 from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
@@ -14,6 +15,30 @@ from .serializers import (
     AdopcionSerializer,
     MyTokenObtainPairSerializer
 )
+class IsAdminRole(permissions.BasePermission):
+    """
+    Permite acceso solo a usuarios con rol 'ADMIN' o que tengan is_staff = True.
+    """
+    def has_permission(self, request, view):
+        return bool(
+            request.user and
+            request.user.is_authenticated and
+            (request.user.tipo_rol == 'ADMIN' or request.user.is_staff)
+        )
+
+class IsOwnerOrAdminOrReadOnly(permissions.BasePermission):
+    """
+    Permite acceso de lectura a cualquiera, y acceso de escritura solo
+    al publicador de la mascota o a un usuario administrador.
+    """
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return bool(
+            request.user and
+            request.user.is_authenticated and
+            (obj.publicador == request.user or request.user.tipo_rol == 'ADMIN' or request.user.is_staff)
+        )
 
 class UsuarioViewSet(viewsets.ModelViewSet):
     queryset = Usuario.objects.all()
@@ -22,7 +47,21 @@ class UsuarioViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == 'create':
             return [permissions.AllowAny()]
-        return [permissions.IsAdminUser()]
+        if self.action == 'buscar':
+            return [permissions.IsAuthenticated()]
+        return [IsAdminRole()]
+
+    @action(detail=False, methods=['get'])
+    def buscar(self, request):
+        email = request.query_params.get('email', None)
+        if not email:
+            return Response({'error': 'Email es requerido'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            usuario = Usuario.objects.get(email__iexact=email)
+            serializer = self.get_serializer(usuario)
+            return Response(serializer.data)
+        except Usuario.DoesNotExist:
+            return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -46,7 +85,7 @@ class MascotaPagination(PageNumberPagination):
 class MascotaViewSet(viewsets.ModelViewSet):
     queryset = Mascota.objects.all().order_by('-fecha_creacion')
     serializer_class = MascotaSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrAdminOrReadOnly]
     pagination_class = MascotaPagination
 
     def perform_create(self, serializer):
@@ -136,6 +175,14 @@ class AdopcionViewSet(viewsets.ModelViewSet):
     queryset = Adopcion.objects.all()
     serializer_class = AdopcionSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.tipo_rol == 'ADMIN' or user.is_staff:
+            return Adopcion.objects.all().order_by('-fecha_adopcion')
+        return Adopcion.objects.filter(
+            Q(adoptante=user) | Q(mascota__publicador=user)
+        ).order_by('-fecha_adopcion')
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer

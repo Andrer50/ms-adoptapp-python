@@ -7,10 +7,11 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Usuario
-        fields = ['id', 'username', 'password', 'email', 'first_name', 'last_name', 'tipo_rol', 'telefono', 'datos_adicionales']
+        fields = ['id', 'username', 'password', 'email', 'first_name', 'last_name', 'tipo_rol', 'telefono', 'is_active', 'date_joined', 'datos_adicionales']
         extra_kwargs = {
             'password': {'write_only': True},
-            'username': {'required': False}
+            'username': {'required': False},
+            'date_joined': {'read_only': True}
         }
 
     def validate(self, attrs):
@@ -61,9 +62,12 @@ class MascotaSerializer(serializers.ModelSerializer):
         return instance
 
 class AdopcionSerializer(serializers.ModelSerializer):
+    mascota_detalle = MascotaSerializer(source='mascota', read_only=True)
+    adoptante_detalle = UsuarioSerializer(source='adoptante', read_only=True)
+
     class Meta:
         model = Adopcion
-        fields = '__all__'
+        fields = ['id', 'mascota', 'adoptante', 'fecha_adopcion', 'mascota_detalle', 'adoptante_detalle']
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod

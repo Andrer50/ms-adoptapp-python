@@ -43,5 +43,18 @@ class Adopcion(models.Model):
     adoptante = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     fecha_adopcion = models.DateTimeField(auto_now_add=True)
 
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        if is_new:
+            self.mascota.estado = 'ADOPTADO'
+            self.mascota.save(update_fields=['estado'])
+
+    def delete(self, *args, **kwargs):
+        mascota = self.mascota
+        super().delete(*args, **kwargs)
+        mascota.estado = 'DISPONIBLE'
+        mascota.save(update_fields=['estado'])
+
     class Meta:
         verbose_name_plural = "Adopciones"
