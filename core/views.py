@@ -40,6 +40,16 @@ class IsOwnerOrAdminOrReadOnly(permissions.BasePermission):
             (obj.publicador == request.user or request.user.tipo_rol == 'ADMIN' or request.user.is_staff)
         )
 
+class IsSelfOrAdmin(permissions.BasePermission):
+    """
+    Permite acceso al propio usuario para ver/editar su perfil, o a un admin.
+    """
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated)
+
+    def has_object_permission(self, request, view, obj):
+        return bool(obj == request.user or request.user.tipo_rol == 'ADMIN' or request.user.is_staff)
+
 class UsuarioViewSet(viewsets.ModelViewSet):
     queryset = Usuario.objects.all()
     serializer_class = UsuarioSerializer
@@ -49,6 +59,8 @@ class UsuarioViewSet(viewsets.ModelViewSet):
             return [permissions.AllowAny()]
         if self.action == 'buscar':
             return [permissions.IsAuthenticated()]
+        if self.action in ['retrieve', 'update', 'partial_update', 'destroy']:
+            return [IsSelfOrAdmin()]
         return [IsAdminRole()]
 
     @action(detail=False, methods=['get'])
