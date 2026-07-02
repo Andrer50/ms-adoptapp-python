@@ -16,3 +16,6 @@ db.postgres
 
 # SO
 .DS_Store
+
+# Archivos multimedia (uploads)
+media/

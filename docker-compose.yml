@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    container_name: adoptapp_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgres://admin:admin123@adoptapp_db_postgres:5432/adoptapp_db
+    volumes:
+      - media_data:/app/media
+    networks:
+      - ms-net
+
+volumes:
+  media_data:
+
+networks:
+  ms-net:
+    external: true
