@@ -30,11 +30,12 @@ class FotoSerializer(serializers.ModelSerializer):
 
 class MascotaSerializer(serializers.ModelSerializer):
     fotos = FotoSerializer(many=True, required=False)
+    publicador_telefono = serializers.CharField(source='publicador.telefono_wsp', read_only=True)
 
     class Meta:
         model = Mascota
-        fields = ['id', 'nombre', 'especie', 'raza', 'edad', 'color', 'tamano', 'descripcion', 'estado', 'publicador', 'fotos']
-        read_only_fields = ['publicador']
+        fields = ['id', 'nombre', 'especie', 'raza', 'edad', 'color', 'tamano', 'descripcion', 'estado', 'publicador', 'publicador_telefono', 'fotos']
+        read_only_fields = ['publicador', 'publicador_telefono']
 
     def create(self, validated_data):
         fotos_data = validated_data.pop('fotos', [])
