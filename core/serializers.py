@@ -1,8 +1,18 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import Usuario, Mascota, Foto, Adopcion
+from .utils import sanitize_text
 
-class UsuarioSerializer(serializers.ModelSerializer):
+class SanitizedModelSerializer(serializers.ModelSerializer):
+    def to_internal_value(self, data):
+        ret = super().to_internal_value(data)
+        for field_name, field_value in list(ret.items()):
+            if isinstance(field_value, str) and field_name != 'password':
+                ret[field_name] = sanitize_text(field_value)
+        return ret
+
+class UsuarioSerializer(SanitizedModelSerializer):
+
     telefono = serializers.CharField(source='telefono_wsp', required=False, allow_blank=True)
 
     class Meta:
@@ -23,12 +33,12 @@ class UsuarioSerializer(serializers.ModelSerializer):
         user = Usuario.objects.create_user(**validated_data)
         return user
 
-class FotoSerializer(serializers.ModelSerializer):
+class FotoSerializer(SanitizedModelSerializer):
     class Meta:
         model = Foto
         fields = ['id', 'url_imagen']
 
-class MascotaSerializer(serializers.ModelSerializer):
+class MascotaSerializer(SanitizedModelSerializer):
     fotos = FotoSerializer(many=True, required=False)
     publicador_telefono = serializers.CharField(source='publicador.telefono_wsp', read_only=True)
 
@@ -62,7 +72,7 @@ class MascotaSerializer(serializers.ModelSerializer):
                 
         return instance
 
-class AdopcionSerializer(serializers.ModelSerializer):
+class AdopcionSerializer(SanitizedModelSerializer):
     mascota_detalle = MascotaSerializer(source='mascota', read_only=True)
     adoptante_detalle = UsuarioSerializer(source='adoptante', read_only=True)
 
